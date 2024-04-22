@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "django-model-builder"
+version = "0.1"
+description = "Django dynamic model builder"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "Django==5.0.2",
+    "psycopg2==2.9.9",
+    "djangorestframework==3.15.1",
+    "markdown==3.6",
+    "pip-tools==7.4.1",
+]
+
+[tool.pip-tools]
+generate-hashes = true
