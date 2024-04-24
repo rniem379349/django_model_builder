@@ -112,11 +112,11 @@ class Field(models.Model):
         """
         match self.field_type:
             case FieldType.STRING:
-                django_field = models.CharField(max_length=150)
+                django_field = models.CharField(max_length=150, null=True)
             case FieldType.NUMBER:
-                django_field = models.IntegerField()
+                django_field = models.IntegerField(null=True)
             case FieldType.BOOLEAN:
-                django_field = models.BooleanField()
+                django_field = models.BooleanField(null=True)
             case _:
                 raise ValidationError(
                     f"Could not resolve field_type {self.field_type} into a Django model field."

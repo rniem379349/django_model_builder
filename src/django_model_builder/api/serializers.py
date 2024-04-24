@@ -49,6 +49,12 @@ class DynamicModelSerializer(serializers.Serializer):
         return model
     
     def update_model(self, model_id):
+        """
+        Update a given model with the provided fields.
+        Adds new fields.
+        Existing fields are not touched unless there was a data type change.
+        In that case, the field is replaces with a new one, with the new data type.
+        """
         try:
             model_to_be_updated = DynamicModelTable.objects.get(model_id=model_id)
         except DynamicModelTable.DoesNotExist:
@@ -58,35 +64,60 @@ class DynamicModelSerializer(serializers.Serializer):
         fields_data = self.validated_data.get('fields', {}).items()
 
         with connection.schema_editor() as schema_editor:
-            # TODO add error handling for edge cases (existing field data, incompatible field change)
             django_model = model_to_be_updated.get_django_model()
+            # Go over the provided fields and add/update the model's fields accordingly
             for name, field in fields_data:
+                # if editing existing field, remove it first
                 if (name,) in current_model_fields.values_list("name"):
-                    updated_field = current_model_fields.get(name=name)
-                    updated_field.field_type = field
-                    updated_field.save()
-                    django_field_for_db = updated_field.get_django_field()
-                    django_field_for_db.column = name
-                    schema_editor.alter_field(django_model, getattr(django_model, name).field, django_field_for_db)
-                else:
-                    new_field = Field.objects.create(model=model_to_be_updated, name=name, field_type=field)
-                    django_field_for_db = new_field.get_django_field()
-                    django_field_for_db.column = name
-                    schema_editor.add_field(django_model, django_field_for_db)
+                    # delete the column only if field type has changed
+                    field_type_changed = current_model_fields.get(name=name).field_type != field
+                    if not field_type_changed:
+                        continue
+                    Field.objects.filter(model=model_to_be_updated, name=name).delete()
+                    schema_editor.remove_field(django_model, getattr(django_model, name).field)
+
+                # this gets triggered for new fields 
+                # and existing fields with a changed data type
+                new_field = Field.objects.create(model=model_to_be_updated, name=name, field_type=field)
+                django_field_for_db = new_field.get_django_field()
+                django_field_for_db.column = name
+                schema_editor.add_field(django_model, django_field_for_db)
         return {"model_id": model_id}
 
 
 class DynamicModelRowSerializer(serializers.Serializer):
     fields = serializers.JSONField()
 
-    def add_row(self, model_id):
-        try:
-            model_table = DynamicModelTable.objects.get(model_id=model_id)
-        except DynamicModelTable.DoesNotExist:
-            return {"error": f"Could not find model with ID of {model_id}."}
+    def validate_fields(self, value):
+        """
+        Check if all provided fields exist in the targeted model.
+        """
+        model_table = self.context.get("model_table", None)
+        if not model_table:
+            raise serializers.ValidationError("This serializer needs a model table object.")
         
-        table_fields = model_table.fields.order_by("name")
-        fields_data = self.validated_data.get("fields")
+        django_model_fields = model_table.fields.all()
+        for field_name, field_val in value.items():
+            if not django_model_fields.filter(name=field_name).exists():
+                raise serializers.ValidationError("Field '{}' not found in model.".format(field_name))
+        return value
+    
+    def create(self, validated_data):
+        """
+        add data row to table.
+        """
+        # get dynamic model
+        model_table = self.context.get("model_table", None)
+        if not model_table:
+            raise serializers.ValidationError("This serializer needs a model table object.")
+        
+        model_id = model_table.model_id
         django_model = model_table.get_django_model()
-        new_object = django_model.objects.create(**fields_data)
-        return {"status": "OK"}
+        
+        # Try to insert the data row
+        fields_data = validated_data.get('fields', {})
+        try:
+            new_row = django_model.objects.create(**fields_data)
+        except Exception as e:
+            return {"error": e.messages}
+        return {"model_id": model_id}
