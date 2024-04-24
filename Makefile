@@ -12,3 +12,9 @@ makemigrations:
 
 migrate:
 	$(RUN) python manage.py migrate
+
+test:
+	$(RUN) python manage.py test
+
+django-shell:
+	$(RUN) python manage.py shell
