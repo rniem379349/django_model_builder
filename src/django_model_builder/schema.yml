@@ -1,0 +1,388 @@
+openapi: 3.0.3
+info:
+  title: Django Dynamic Model Builder
+  version: 0.0.0
+paths:
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/table/:
+    post:
+      operationId: table_create
+      description: Create dynamic model.
+      tags:
+      - table
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+            examples:
+              ValidTableCreationExample:
+                value:
+                  fields:
+                    name: STR
+                    age: NUM
+                    insured: BOOL
+                summary: Valid dynamic model structure
+                description: 'The only input field is ''fields'', which takes a dictionary.
+                  The keys are the model field names, and the values are the field
+                  data types. There are three options: STR, NUM, and BOOL.'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModel'
+              examples:
+                TableCreation200Response:
+                  value:
+                    fields:
+                      model_id: c5b6a417-ec78-46e1-99a6-43d5688f81cd
+                  summary: Successful table creation response
+          description: ''
+  /api/table/{id}:
+    put:
+      operationId: table_update
+      description: Update dynamic model.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - table
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+            examples:
+              ValidTableUpdateExample:
+                value:
+                  fields:
+                    name: STR
+                    age: NUM
+                    insured: BOOL
+                summary: Valid dynamic model structure
+                description: 'As with the create view, fhe only input field is ''fields'',
+                  which takes a dictionary. The keys are the model field names, and
+                  the values are the field data types. There are three options: STR,
+                  NUM, and BOOL. The provided fields are checked against the existing
+                  model structure. new fields are added, and fields with the same
+                  name are dropped and replaced with the new field, but only if there
+                  was a data type change (e.g. from STR to NUM).'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DynamicModel'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModel'
+              examples:
+                TableUpdate200Response:
+                  value:
+                    fields:
+                      model_id: c1bfab92-923e-4c24-abf8-463db2c53b04
+                  summary: Successful table update response
+          description: ''
+  /api/table/{id}/row:
+    post:
+      operationId: table_row_create
+      description: Add row to dynamic model table.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - table
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicModelRow'
+            examples:
+              ValidTableRowInsertionExample:
+                value:
+                  fields:
+                    name: Adam
+                    age: 23
+                    insured: Foo
+                summary: Valid dynamic model row
+                description: To add a row to a dynamic model, pass the 'fields' argument.
+                  The keys are the model field names, and the values are the row values.
+                  dynamic model fields are nullable, so you can omit values. If there
+                  is an unexpected input field, or an incompatible value, an error
+                  is thrown.
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DynamicModelRow'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DynamicModelRow'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModelRow'
+              examples:
+                TableRowInsertion200Response:
+                  value:
+                    fields:
+                      model_id: dd5fd62a-9938-49ce-be17-36f122eff02b
+                  summary: Successful table row insertion response
+          description: ''
+  /api/table/{id}/rows:
+    get:
+      operationId: table_rows_retrieve
+      description: Get a dynamic model table's row data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - table
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModelRowResponse'
+              examples:
+                TableRowInsertion200Response:
+                  value:
+                  - name: Adam
+                    age: 23
+                    insured: 0
+                  - name: Mike
+                    age: 31
+                    insured: 1
+                  summary: Successful table row insertion response
+                  description: This response assumes that a table with the columns
+                    'name', 'age', and 'insured' exists.
+          description: ''
+components:
+  schemas:
+    DynamicModel:
+      type: object
+      properties:
+        fields:
+          type: object
+          additionalProperties:
+            enum:
+            - STR
+            - NUM
+            - BOOL
+            type: string
+            description: |-
+              * `STR` - STR
+              * `NUM` - NUM
+              * `BOOL` - BOOL
+      required:
+      - fields
+    DynamicModelRow:
+      type: object
+      properties:
+        fields: {}
+      required:
+      - fields
+    DynamicModelRowResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        insured:
+          type: boolean
+      required:
+      - age
+      - insured
+      - name
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

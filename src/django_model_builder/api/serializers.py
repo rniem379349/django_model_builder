@@ -4,6 +4,7 @@ from uuid import uuid4
 from api.models import FieldType, DynamicModelTable, App, Field
 import types
 from django.db.utils import DataError
+from drf_spectacular.utils import extend_schema_serializer, OpenApiExample
 
 
 def create_serializer_for_model(dj_model):
@@ -67,17 +68,15 @@ class DynamicModelSerializer(serializers.Serializer):
             django_model = model_to_be_updated.get_django_model()
             # Go over the provided fields and add/update the model's fields accordingly
             for name, field in fields_data:
-                # if editing existing field, remove it first
+                # if editing existing field, remove it first, only if field type changed
                 if (name,) in current_model_fields.values_list("name"):
-                    # delete the column only if field type has changed
                     field_type_changed = current_model_fields.get(name=name).field_type != field
                     if not field_type_changed:
                         continue
                     Field.objects.filter(model=model_to_be_updated, name=name).delete()
                     schema_editor.remove_field(django_model, getattr(django_model, name).field)
 
-                # this gets triggered for new fields 
-                # and existing fields with a changed data type
+                # create new field if adding column or changing existing one's data type
                 new_field = Field.objects.create(model=model_to_be_updated, name=name, field_type=field)
                 django_field_for_db = new_field.get_django_field()
                 django_field_for_db.column = name

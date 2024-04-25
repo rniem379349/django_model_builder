@@ -1,9 +1,13 @@
 from django.urls import path
-from api.views import create_table, edit_table, get_table_rows, add_table_row
+from api.views import DynamicModelCreateView, DynamicModelUpdateView, DynamicModelAddRowView, DynamicModelGetRowsView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
 
 urlpatterns = [
-    path("table/", create_table, name="create_table"),
-    path("table/<str:id>", edit_table, name="edit_table"),
-    path("table/<str:id>/row", add_table_row, name="add_table_row"),
-    path("table/<str:id>/rows", get_table_rows, name="get_table_rows"),
+    path("table/", DynamicModelCreateView.as_view(), name="create_table"),
+    path("table/<str:id>", DynamicModelUpdateView.as_view(), name="edit_table"),
+    path("table/<str:id>/row", DynamicModelAddRowView.as_view(), name="add_table_row"),
+    path("table/<str:id>/rows", DynamicModelGetRowsView.as_view(), name="get_table_rows"),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("schema/docs/", SpectacularSwaggerView.as_view(url_name="api:schema")),
 ]
