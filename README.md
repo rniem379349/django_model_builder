@@ -1,9 +1,9 @@
 # django_model_builder
-A dynamic model builder API, build using Django and DRF.
+A dynamic model builder API, built using Django and DRF.
 
 ## Features
 - DRF's browsable API,
-- Documentation using `drf_spectacular` including examples,
+- Comprehensive documentation with examples,
 - API Tests.
 
 ## Setup
