@@ -23,6 +23,10 @@ def string_is_valid_uuid(string):
 
 
 @extend_schema(
+    responses = {
+        201: DynamicModelSerializer,
+        400: DynamicModelSerializer,
+    },
     examples = [
          OpenApiExample(
             'Valid table creation example',
@@ -40,12 +44,37 @@ def string_is_valid_uuid(string):
             request_only=True, # signal that example only applies to requests
         ),
         OpenApiExample(
-            'Table creation 200 response',
+            'Inalid table creation example',
+            summary='Inalid dynamic model structure',
+            description='This request will fail, because the field type ' \
+                'is different from the available choices.',
+            value={
+                'fields': {
+                    'date': "DATE",
+                }
+            },
+            request_only=True, # signal that example only applies to requests
+        ),
+        OpenApiExample(
+            'Table creation 201 response',
             summary='Successful table creation response',
             description='',
+            status_codes=[201,],
             value={
                 'fields': {
                     'model_id': uuid.uuid4(),
+                }
+            },
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table creation 400 response',
+            summary='Invalid table field declaration',
+            description='Error response thrown due to erroneously defined table fields.',
+            status_codes=[400,],
+            value={
+                'fields': {
+                    'name': ["\"DATE\" is not a valid choice."]
                 }
             },
             response_only=True, # signal that example only applies to responses
@@ -68,6 +97,11 @@ class DynamicModelCreateView(GenericAPIView):
 
 
 @extend_schema(
+    responses = {
+        200: DynamicModelSerializer,
+        400: DynamicModelSerializer,
+        404: DynamicModelSerializer
+    },
     examples = [
          OpenApiExample(
             'Valid table update example',
@@ -88,6 +122,18 @@ class DynamicModelCreateView(GenericAPIView):
             request_only=True, # signal that example only applies to requests
         ),
         OpenApiExample(
+            'Inalid table creation example',
+            summary='Inalid dynamic model structure',
+            description='This request will fail, because the field type ' \
+                'is different from the available choices.',
+            value={
+                'fields': {
+                    'date': "DATE",
+                }
+            },
+            request_only=True, # signal that example only applies to requests
+        ),
+        OpenApiExample(
             'Table update 200 response',
             summary='Successful table update response',
             description='',
@@ -95,6 +141,28 @@ class DynamicModelCreateView(GenericAPIView):
                 'fields': {
                     'model_id': uuid.uuid4(),
                 }
+            },
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table creation 400 response',
+            summary='Invalid table field declaration',
+            description='Error response thrown due to erroneously defined table fields.',
+            status_codes=[400,],
+            value={
+                'fields': {
+                    'name': ["\"DATE\" is not a valid choice."]
+                }
+            },
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table creation 404 response',
+            summary='Table not found',
+            description='Error response thrown due to table not being found.',
+            status_codes=[404,],
+            value={
+                "detail": "Not found."
             },
             response_only=True, # signal that example only applies to responses
         ),
@@ -121,13 +189,18 @@ class DynamicModelUpdateView(GenericAPIView):
             data=request.data,
             context={"model_id": model.model_id}
         )
-        if serializer.is_valid():
+        if serializer.is_valid() and not serializer.data.get("error"):
             updated_model = serializer.update_model(model.model_id)
             return Response(updated_model, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
+    responses = {
+        201: DynamicModelRowSerializer,
+        400: DynamicModelRowSerializer,
+        404: DynamicModelRowSerializer,
+    },
     examples = [
          OpenApiExample(
             'Valid table row insertion example',
@@ -140,19 +213,55 @@ class DynamicModelUpdateView(GenericAPIView):
                 "fields": {
                     "name": "Adam",
                     "age": 23,
-                    "insured": "Foo" # error
+                    "insured": "Foo"
+                }
+            },
+            request_only=True, # signal that example only applies to requests
+        ),
+         OpenApiExample(
+            'Inalid table row insertion example',
+            summary='Invalid dynamic model row',
+            description='This request will fail, because there is no \'height\' field in the model.',
+            value={
+                "fields": {
+                    "name": "Adam",
+                    "age": 23,
+                    "insured": "Foo",
+                    "height": 178 # error
                 }
             },
             request_only=True, # signal that example only applies to requests
         ),
         OpenApiExample(
-            'Table row insertion 200 response',
+            'Table row insertion 201 response',
             summary='Successful table row insertion response',
             description='',
             value={
                 'fields': {
                     'model_id': uuid.uuid4(),
                 }
+            },
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table row insertion 400 response',
+            summary='Invalid table field declaration',
+            description='This request failed due to an unexpected field in the request.',
+            status_codes=[400,],
+            value={
+                "fields": [
+                    "Field 'height' not found in model."
+                ]
+            },
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table creation 404 response',
+            summary='Table not found',
+            description='Error response thrown due to table not being found.',
+            status_codes=[404,],
+            value={
+                "detail": "Not found."
             },
             response_only=True, # signal that example only applies to responses
         ),
@@ -193,6 +302,12 @@ class DynamicModelAddRowView(GenericAPIView):
                 "age": serializers.IntegerField(),
                 "insured": serializers.BooleanField(),
             },
+        ),
+        404: inline_serializer(
+            name="DynamicModelRowErrorResponse",
+            fields={
+                "detail": serializers.CharField(),
+            },
         )
     },
     examples = [
@@ -205,10 +320,11 @@ class DynamicModelAddRowView(GenericAPIView):
             request_only=True, # signal that example only applies to requests
         ),
         OpenApiExample(
-            'Table row insertion 200 response',
-            summary='Successful table row insertion response',
+            'Table row data fetch 200 response',
+            summary='Successful table row data fetch response',
             description='This response assumes that a table ' \
                 'with the columns \'name\', \'age\', and \'insured\' exists.',
+            status_codes=[200,],
             value= [
                     {
                         "name": "Adam",
@@ -221,6 +337,16 @@ class DynamicModelAddRowView(GenericAPIView):
                         "insured": 1
                     }
                 ],
+            response_only=True, # signal that example only applies to responses
+        ),
+        OpenApiExample(
+            'Table row data fetch 404 response',
+            summary='Table not found',
+            description='Error response thrown due to table not being found.',
+            status_codes=[404,],
+            value={
+                "detail": "Not found."
+            },
             response_only=True, # signal that example only applies to responses
         ),
     ]

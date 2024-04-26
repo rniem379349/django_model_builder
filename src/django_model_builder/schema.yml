@@ -171,6 +171,13 @@ paths:
                 description: 'The only input field is ''fields'', which takes a dictionary.
                   The keys are the model field names, and the values are the field
                   data types. There are three options: STR, NUM, and BOOL.'
+              InalidTableCreationExample:
+                value:
+                  fields:
+                    date: DATE
+                summary: Inalid dynamic model structure
+                description: This request will fail, because the field type is different
+                  from the available choices.
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/DynamicModel'
@@ -183,17 +190,32 @@ paths:
       - basicAuth: []
       - {}
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DynamicModel'
               examples:
-                TableCreation200Response:
+                TableCreation201Response:
                   value:
                     fields:
-                      model_id: c5b6a417-ec78-46e1-99a6-43d5688f81cd
+                      model_id: 01a6c8ea-d170-4273-be01-a8ba4ebcc5cf
                   summary: Successful table creation response
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModel'
+              examples:
+                TableCreation400Response:
+                  value:
+                    fields:
+                      name:
+                      - '"DATE" is not a valid choice.'
+                  summary: Invalid table field declaration
+                  description: Error response thrown due to erroneously defined table
+                    fields.
           description: ''
   /api/table/{id}:
     put:
@@ -227,6 +249,13 @@ paths:
                   model structure. new fields are added, and fields with the same
                   name are dropped and replaced with the new field, but only if there
                   was a data type change (e.g. from STR to NUM).'
+              InalidTableCreationExample:
+                value:
+                  fields:
+                    date: DATE
+                summary: Inalid dynamic model structure
+                description: This request will fail, because the field type is different
+                  from the available choices.
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/DynamicModel'
@@ -248,8 +277,35 @@ paths:
                 TableUpdate200Response:
                   value:
                     fields:
-                      model_id: c1bfab92-923e-4c24-abf8-463db2c53b04
+                      model_id: ef655a66-6e93-440b-9fa5-cdb8b6d81882
                   summary: Successful table update response
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModel'
+              examples:
+                TableCreation400Response:
+                  value:
+                    fields:
+                      name:
+                      - '"DATE" is not a valid choice.'
+                  summary: Invalid table field declaration
+                  description: Error response thrown due to erroneously defined table
+                    fields.
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModel'
+              examples:
+                TableCreation404Response:
+                  value:
+                    detail: Not found.
+                  summary: Table not found
+                  description: Error response thrown due to table not being found.
           description: ''
   /api/table/{id}/row:
     post:
@@ -281,6 +337,16 @@ paths:
                   dynamic model fields are nullable, so you can omit values. If there
                   is an unexpected input field, or an incompatible value, an error
                   is thrown.
+              InalidTableRowInsertionExample:
+                value:
+                  fields:
+                    name: Adam
+                    age: 23
+                    insured: Foo
+                    height: 178
+                summary: Invalid dynamic model row
+                description: This request will fail, because there is no 'height'
+                  field in the model.
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/DynamicModelRow'
@@ -293,17 +359,43 @@ paths:
       - basicAuth: []
       - {}
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DynamicModelRow'
               examples:
-                TableRowInsertion200Response:
+                TableRowInsertion201Response:
                   value:
                     fields:
-                      model_id: dd5fd62a-9938-49ce-be17-36f122eff02b
+                      model_id: 29a2134b-93fb-4272-966b-6631875a575b
                   summary: Successful table row insertion response
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModelRow'
+              examples:
+                TableRowInsertion400Response:
+                  value:
+                    fields:
+                    - Field 'height' not found in model.
+                  summary: Invalid table field declaration
+                  description: This request failed due to an unexpected field in the
+                    request.
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModelRow'
+              examples:
+                TableCreation404Response:
+                  value:
+                    detail: Not found.
+                  summary: Table not found
+                  description: Error response thrown due to table not being found.
           description: ''
   /api/table/{id}/rows:
     get:
@@ -328,7 +420,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DynamicModelRowResponse'
               examples:
-                TableRowInsertion200Response:
+                TableRowDataFetch200Response:
                   value:
                   - name: Adam
                     age: 23
@@ -336,9 +428,21 @@ paths:
                   - name: Mike
                     age: 31
                     insured: 1
-                  summary: Successful table row insertion response
+                  summary: Successful table row data fetch response
                   description: This response assumes that a table with the columns
                     'name', 'age', and 'insured' exists.
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DynamicModelRowErrorResponse'
+              examples:
+                TableRowDataFetch404Response:
+                  value:
+                    detail: Not found.
+                  summary: Table not found
+                  description: Error response thrown due to table not being found.
           description: ''
 components:
   schemas:
@@ -365,6 +469,13 @@ components:
         fields: {}
       required:
       - fields
+    DynamicModelRowErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     DynamicModelRowResponse:
       type: object
       properties:
